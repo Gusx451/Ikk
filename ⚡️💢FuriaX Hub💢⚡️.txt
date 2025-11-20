@@ -1,0 +1,422 @@
+-- Admin Fling vFinal COMPLETO + AntiSit Toggle + UI Arredondada + AutoFling no Reset + Som + MiniButton só imagem
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+local HUB_IMAGE = "rbxassetid://83169870781415" -- imagem do botão
+
+------------------------------------------------------------
+-- GUI PRINCIPAL (não reseta ao morrer)
+------------------------------------------------------------
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AdminFling"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- SOM AO EXECUTAR
+local sound = Instance.new("Sound")
+sound.SoundId = "rbxassetid://9116303064"
+sound.Volume = 1
+sound.Parent = ScreenGui
+sound:Play()
+
+------------------------------------------------------------
+-- BOTÃO MÓVEL (abre o hub) - apenas imagem
+------------------------------------------------------------
+local MiniButton = Instance.new("ImageButton")
+MiniButton.Image = HUB_IMAGE
+MiniButton.Size = UDim2.new(0,55,0,55)
+MiniButton.Position = UDim2.new(0.5,0,0.6,0)
+MiniButton.AnchorPoint = Vector2.new(0.5,0.5)
+MiniButton.BackgroundTransparency = 1
+MiniButton.Parent = ScreenGui
+
+Instance.new("UICorner", MiniButton).CornerRadius = UDim.new(0,15)
+
+-- Drag Mini (PC + Mobile)
+local draggingMini = false
+local dragStartMini, startMiniPos
+
+local function beginDragMini(input)
+    draggingMini = true
+    dragStartMini = input.Position
+    startMiniPos = MiniButton.Position
+
+    input.Changed:Connect(function()
+        if input.UserInputState == Enum.UserInputState.End then
+            draggingMini = false
+        end
+    end)
+end
+
+MiniButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        beginDragMini(input)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if draggingMini and (input.UserInputType == Enum.UserInputType.MouseMovement
+    or input.UserInputType == Enum.UserInputType.Touch) then
+
+        local delta = input.Position - dragStartMini
+
+        MiniButton.Position = UDim2.new(
+            startMiniPos.X.Scale,
+            startMiniPos.X.Offset + delta.X,
+            startMiniPos.Y.Scale,
+            startMiniPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+------------------------------------------------------------
+-- HUB (COMEÇA FECHADO)
+------------------------------------------------------------
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0,250,0,390)
+MainFrame.Position = UDim2.new(0.5,0,0.5,0)
+MainFrame.AnchorPoint = Vector2.new(0.5,0.5)
+MainFrame.BackgroundColor3 = Color3.fromRGB(40,40,40)
+MainFrame.Visible = false
+MainFrame.Parent = ScreenGui
+
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,15)
+
+local function OpenHub()
+    MainFrame.Visible = true
+    MiniButton.Visible = false
+    MainFrame.Size = UDim2.new(0,0,0,0)
+    TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Back), {
+        Size = UDim2.new(0,250,0,390)
+    }):Play()
+end
+MiniButton.MouseButton1Click:Connect(OpenHub)
+
+------------------------------------------------------------
+-- BOTÃO FECHAR
+------------------------------------------------------------
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Text = "X"
+CloseBtn.Size = UDim2.new(0,30,0,30)
+CloseBtn.Position = UDim2.new(1,-35,0,5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200,50,50)
+CloseBtn.TextColor3 = Color3.new(1,1,1)
+CloseBtn.Parent = MainFrame
+Instance.new("UICorner", CloseBtn)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    MiniButton.Visible = true
+end)
+
+------------------------------------------------------------
+-- TÍTULO
+------------------------------------------------------------
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1,0,0,40)
+Title.BackgroundColor3 = Color3.fromRGB(20,20,20)
+Title.Text = "💢FuriaX Hub V3💢"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.Parent = MainFrame
+Instance.new("UICorner", Title)
+
+------------------------------------------------------------
+-- BARRA INFERIOR
+------------------------------------------------------------
+local DragHandle = Instance.new("Frame")
+DragHandle.Size = UDim2.new(1,0,0,10)
+DragHandle.Position = UDim2.new(0,0,1,-10)
+DragHandle.BackgroundColor3 = Color3.fromRGB(80,80,80)
+DragHandle.BackgroundTransparency = 0.4
+DragHandle.Parent = MainFrame
+Instance.new("UICorner", DragHandle)
+
+------------------------------------------------------------
+-- DRAG UNIVERSAL
+------------------------------------------------------------
+local dragging = false
+local dragStart
+local startPos
+
+local function BeginDrag(frame, input)
+    dragging = true
+    dragStart = input.Position
+    startPos = frame.Position
+
+    input.Changed:Connect(function()
+        if input.UserInputState == Enum.UserInputState.End then
+            dragging = false
+        end
+    end)
+end
+
+local function UpdateDrag(frame, input)
+    if dragging then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+end
+
+local function EnableDrag(frame, dragArea)
+    dragArea.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            BeginDrag(frame, input)
+        end
+    end)
+
+    dragArea.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+            UserInputService.InputChanged:Connect(function(moveInput)
+                if moveInput == input then
+                    UpdateDrag(frame, moveInput)
+                end
+            end)
+        end
+    end)
+end
+
+EnableDrag(MainFrame, Title)
+EnableDrag(MainFrame, DragHandle)
+
+------------------------------------------------------------
+-- LISTA DE PLAYERS
+------------------------------------------------------------
+local PlayerList = Instance.new("ScrollingFrame")
+PlayerList.Size = UDim2.new(1,-10,0,100)
+PlayerList.Position = UDim2.new(0,5,0,50)
+PlayerList.BackgroundColor3 = Color3.fromRGB(30,30,30)
+PlayerList.CanvasSize = UDim2.new(0,0,0,0)
+PlayerList.Parent = MainFrame
+Instance.new("UICorner", PlayerList)
+
+local UIListLayout = Instance.new("UIListLayout", PlayerList)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0,5)
+
+local SelectedPlayer
+
+local function RefreshPlayerList()
+    for _,c in pairs(PlayerList:GetChildren()) do
+        if c:IsA("TextButton") then c:Destroy() end
+    end
+
+    for _,p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1,-10,0,30)
+            btn.Text = p.Name
+            btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+            btn.TextColor3 = Color3.new(1,1,1)
+            btn.Parent = PlayerList
+            Instance.new("UICorner", btn)
+
+            btn.MouseButton1Click:Connect(function()
+                SelectedPlayer = p
+                for _,x in pairs(PlayerList:GetChildren()) do
+                    if x:IsA("TextButton") then
+                        x.BackgroundColor3 = Color3.fromRGB(60,60,60)
+                    end
+                end
+                btn.BackgroundColor3 = Color3.fromRGB(0,150,255)
+            end)
+        end
+    end
+
+    PlayerList.CanvasSize = UDim2.new(0,0,0,UIListLayout.AbsoluteContentSize.Y)
+end
+RefreshPlayerList()
+Players.PlayerAdded:Connect(RefreshPlayerList)
+Players.PlayerRemoving:Connect(RefreshPlayerList)
+
+------------------------------------------------------------
+-- TP's E BOTÕES
+------------------------------------------------------------
+local SofaButton = Instance.new("TextButton")
+SofaButton.Size = UDim2.new(1,-10,0,40)
+SofaButton.Position = UDim2.new(0,5,0,160)
+SofaButton.Text = "Pegar Sofá"
+SofaButton.BackgroundColor3 = Color3.fromRGB(70,70,70)
+SofaButton.TextColor3 = Color3.new(1,1,1)
+SofaButton.Parent = MainFrame
+Instance.new("UICorner", SofaButton)
+
+SofaButton.MouseButton1Click:Connect(function()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-82.32,19.09,-130.06)
+    end
+end)
+
+local AntiSit = false
+
+local AntiSitBtn = Instance.new("TextButton")
+AntiSitBtn.Size = UDim2.new(1,-10,0,40)
+AntiSitBtn.Position = UDim2.new(0,5,0,205)
+AntiSitBtn.Text = "Anti-Sit: OFF"
+AntiSitBtn.BackgroundColor3 = Color3.fromRGB(120,120,120)
+AntiSitBtn.TextColor3 = Color3.new(1,1,1)
+AntiSitBtn.Parent = MainFrame
+Instance.new("UICorner", AntiSitBtn)
+
+AntiSitBtn.MouseButton1Click:Connect(function()
+    AntiSit = not AntiSit
+
+    if AntiSit then
+        AntiSitBtn.BackgroundColor3 = Color3.fromRGB(0,200,0)
+        AntiSitBtn.Text = "Anti-Sit: ON"
+    else
+        AntiSitBtn.BackgroundColor3 = Color3.fromRGB(120,120,120)
+        AntiSitBtn.Text = "Anti-Sit: OFF"
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.1) do
+        if AntiSit and LocalPlayer.Character then
+            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Sit then
+                hum.Sit = false
+            end
+        end
+    end
+end)
+
+local TpCentral = Instance.new("TextButton")
+TpCentral.Size = UDim2.new(1,-10,0,40)
+TpCentral.Position = UDim2.new(0,5,0,250)
+TpCentral.Text = "TP Central"
+TpCentral.BackgroundColor3 = Color3.fromRGB(70,70,70)
+TpCentral.TextColor3 = Color3.new(1,1,1)
+TpCentral.Parent = MainFrame
+Instance.new("UICorner", TpCentral)
+
+TpCentral.MouseButton1Click:Connect(function()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-62.93,22.92,-69.86)
+    end
+end)
+
+
+
+------------------------------------------------------------
+-- ⭐ MODO BONECO DURO ESTILO "INFINITE YIELD COMA / TRIP" ⭐
+------------------------------------------------------------
+local spinning = false
+local TargetPlayer = nil
+
+local function HardModeLoop()
+    while spinning and LocalPlayer.Character do
+        local char = LocalPlayer.Character
+
+        -- boneco duro (coma infinito)
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.PlatformStand = true -- deixa travado igual Infinite Yield coma
+        end
+
+        -- destruir juntas para travar corpo
+        for _,v in pairs(char:GetChildren()) do
+            if v:IsA("Motor6D") then
+                v:Destroy()
+            end
+        end
+
+        task.wait(0.08)
+    end
+
+    -- ao cancelar o fling volta ao normal
+    if LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.PlatformStand = false end
+    end
+end
+
+
+------------------------------------------------------------
+-- FLING OP (com modo duro aplicado durante o fling)
+------------------------------------------------------------
+local function StartFling()
+    local char = LocalPlayer.Character
+    local targetChar = TargetPlayer and TargetPlayer.Character
+    if not char or not targetChar then return end
+
+    spinning = true
+
+    -- ativa modo coma trip
+    task.spawn(HardModeLoop)
+
+    -- equipar tools
+    pcall(function()
+        for _,v in pairs(LocalPlayer.Backpack:GetChildren()) do
+            if v:IsA("Tool") then
+                v.Parent = LocalPlayer.Character
+            end
+        end
+    end)
+
+    -- loop do fling
+    task.spawn(function()
+        while spinning and TargetPlayer and TargetPlayer.Character and LocalPlayer.Character do
+            local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local target = TargetPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+            if hrp and target then
+                hrp.Velocity = (target.Position - hrp.Position).unit * 2500
+            end
+
+            RunService.Heartbeat:Wait()
+        end
+    end)
+end
+
+
+------------------------------------------------------------
+-- BOTÕES DO FLING
+------------------------------------------------------------
+local SpinButton = Instance.new("TextButton")
+SpinButton.Size = UDim2.new(1,-10,0,40)
+SpinButton.Position = UDim2.new(0,5,0,300)
+SpinButton.Text = "Fling Lion (OP)"
+SpinButton.BackgroundColor3 = Color3.fromRGB(70,70,70)
+SpinButton.TextColor3 = Color3.new(1,1,1)
+SpinButton.Parent = MainFrame
+Instance.new("UICorner", SpinButton)
+
+SpinButton.MouseButton1Click:Connect(function()
+    if not SelectedPlayer then return end
+    TargetPlayer = SelectedPlayer
+    StartFling()
+end)
+
+local CancelButton = Instance.new("TextButton")
+CancelButton.Size = UDim2.new(1,-10,0,40)
+CancelButton.Position = UDim2.new(0,5,0,345)
+CancelButton.Text = "Cancelar Fling"
+CancelButton.BackgroundColor3 = Color3.fromRGB(200,50,50)
+CancelButton.TextColor3 = Color3.new(1,1,1)
+CancelButton.Parent = MainFrame
+Instance.new("UICorner", CancelButton)
+
+CancelButton.MouseButton1Click:Connect(function()
+    spinning = false
+end)
+
+
+------------------------------------------------------------
+-- AUTO CONTINUAR FLING APÓS RESET
+------------------------------------------------------------
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    if spinning and TargetPlayer then
+        StartFling()
+    end
+end)
